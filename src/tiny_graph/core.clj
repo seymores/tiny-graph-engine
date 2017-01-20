@@ -38,10 +38,10 @@
       (catch Exception e "NO SUCH ROUTE"))))
 
 (defn hop
-  [g start end]
-  (let [distance (get-in @g [start end])]
+  [edge start end]
+  (let [distance (get-in edge [start end])]
     (if-not (nil? distance)
-      {end distance}
+      {start {end distance}}
       nil)))
 
 ;  {
@@ -55,16 +55,29 @@
 (defn has-edge-node? 
   [node e]
   (contains? node e))
+  ;; (and (contains? node e)
+  ;;      (> (count node) 1)))
 
+(defn traverse
+  [g start end max-hop]
+    (println start "->" end ", m=" max-hop)
+    (if (has-edge-node? (start @g) end)
+      (hop @g start end)
+      ;; (for [[k v] (start @g)] (println k " ->" end))
+      (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
+      )
+  )
+
+;{{{
 (defn route
   "Traverse from root to goal"
   [g start goal max-hop]
   (if (has-edge-node? (start @g) goal)
-    (hop g start goal)
+    (hop @g start goal)
     ()
   )
   )
-
+;}}}
 
 ;; ///////////////////////////////////////////////////////////////////////////////
 
