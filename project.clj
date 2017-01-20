@@ -2,4 +2,3 @@
   :main ^:skip-aot tiny-graph.core  
   :target-path "target/%s"  
   :dependencies [[org.clojure/clojure "1.8.0"]])
-/Users/ping/Work/trains-graph/README.md
