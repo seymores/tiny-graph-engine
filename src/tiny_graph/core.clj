@@ -30,14 +30,14 @@
     (get-in @graph [n1 n2])))
 
 (defn distance
-  [g & args]
-  (let [nodes (flatten args)
-        r (first nodes)
+  [g & nodes]
+  (println ">>>> " nodes)
+  (let [r (first nodes)
         n (-> nodes rest first)
         b (rest nodes)]
 
       (if (> (count b) 1)
-        (+ (distance-val g r n) (distance g b))
+        (+ (distance-val g r n) (apply distance g b))
         (distance-val g r n))
     ))
 
