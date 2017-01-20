@@ -15,31 +15,56 @@
         n2 (keyword node2)]    
     (swap! g assoc-in [n1 n2] weight)))
 
-(defn route
-  "Traverse from root to goal"
-  [g start goal]
-  ;
-  )
-
 (defn distance-val
   "Returns the weight/distance between two nodes"
   [g node1 node2]
   (println " 3 " node1 " - " node2)
   (let [n1 (keyword node1)
-        n2 (keyword node2)]
-    (get-in @graph [n1 n2])))
+        n2 (keyword node2)
+        distance-val (get-in @graph [n1 n2])]
+    (if (nil? distance-val)
+      (throw (Exception. "NO SUCH ROUTE"))
+      distance-val)))
 
 (defn distance
   [g & nodes]
-  (println ">>>> " nodes)
   (let [r (first nodes)
         n (-> nodes rest first)
         b (rest nodes)]
-
+    (try 
       (if (> (count b) 1)
         (+ (distance-val g r n) (apply distance g b))
         (distance-val g r n))
-    ))
+      (catch Exception e "NO SUCH ROUTE"))))
+
+(defn hop
+  [g start end]
+  (let [distance (get-in @g [start end])]
+    (if-not (nil? distance)
+      {end distance}
+      nil)))
+
+;  {
+;    :A {:B 5 :D 5 :E 7} 
+;    :B {:C 4} 
+;    :C {:D 8 :E 2} 
+;    :D {:C 8 :E 6} 
+;    :E {:B 3}
+;   }
+
+(defn has-edge-node? 
+  [node e]
+  (contains? node e))
+
+(defn route
+  "Traverse from root to goal"
+  [g start goal max-hop]
+  (if (has-edge-node? (start @g) goal)
+    (hop g start goal)
+    ()
+  )
+  )
+
 
 ;; ///////////////////////////////////////////////////////////////////////////////
 
@@ -53,14 +78,6 @@
 (add-edge graph "C" "E" 2)
 (add-edge graph "E" "B" 3)
 (add-edge graph "A" "E" 7)
-
-;  {
-;    :A {:B 5 :D 5 :E 7} 
-;    :B {:C 4} 
-;    :C {:D 8 :E 2} 
-;    :D {:C 8 :E 6} 
-;    :E {:B 3}
-;   }
 
 ;; (route graph "A" "B" "C")
 ;; (route graph "A" "D")
