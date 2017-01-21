@@ -51,24 +51,45 @@
 ;    :D {:C 8 :E 6} 
 ;    :E {:B 3}
 ;   }
-; A-C = ABC, ADC
+
 (defn has-edge-node? 
   [node e]
   (contains? node e))
 
+(def bucket (atom []))
+
 (defn trace
-  [g start end max-hop]
-  (println "> " start "-" end ",   max=" max-hop)
+  [g start end max-hop parent]
+  (println " __ " start "-" end ",   max=" max-hop ",p==" parent)
 
   (let [nodes (start g)]
 
     (if (> max-hop 0)
 
-      (do 
+      (if (has-edge-node? nodes end)
 
-        (list start end)
-        (for [[k v] nodes] (trace g k end (dec max-hop)))
-      
+        ; found
+        (do 
+
+          (println "> " start "-" end ",   max=" max-hop ",p==" parent)
+          (println (conj parent start end) "\n")
+
+          (swap! bucket conj (conj parent start end))
+
+          ;; (for [[k v] (end g)] (trace g end end (dec max-hop) (conj parent start)))
+           (trace g end end (dec max-hop) (conj parent start))
+
+
+
+          )
+
+
+        ; not found
+          (for [[k v] nodes] (trace g k end (dec max-hop) (conj parent start)))
+
+        )
+
+
     
       ;; (if (has-edge-node? nodes end)
       ;;   (list start end)
@@ -77,7 +98,8 @@
           ;; (-> (trace g k end (dec max-hop)) flatten (into [start])))
       ;;   
       ;;   )
-    ))
+    
+    )
    )
   )
 
