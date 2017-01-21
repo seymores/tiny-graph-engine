@@ -58,28 +58,33 @@
 
 (def bucket (atom []))
 
-;; (defn trace
-;;   [g start end max-distance parent]
-;;   (println " * __ " start "-" end ",   max=" max-distance ",p==" parent)
-;;
-;;   (let [nodes (start g)]
-;;
-;;       (if (has-edge-node? nodes end)
-;;         ; found
-;;         (do 
-;;           (if (> max-distance (apply distance graph (conj parent start end)))
-;;             (do 
-;;               (swap! bucket conj (conj parent start end))
-;;               (trace g end end max-distance (conj parent start)))
-;;             )
-;;           )
-;;
-;;         ; not found
-;;         (doseq [[k v] nodes] (trace g k end max-distance (conj parent start)))
-;;
-;;         )
-;;     )
-;;   )
+(defn trace
+  [g start end max-distance parent]
+  (println " * __ " start "-" end ",   max=" max-distance ",p==" parent)
+
+  (let [nodes (start g)]
+
+    (if (has-edge-node? nodes end)
+      ; found
+      (do 
+        (if (> max-distance (apply distance graph (conj parent start end)))
+          (do 
+            (swap! bucket conj (conj parent start end))
+            (trace g end end max-distance (conj parent start))
+            (println " -----------------" )
+            (doseq [[k v] (dissoc nodes end)] (trace g k end max-distance (conj parent start)))
+            )
+          )
+        )
+
+      ; not found
+      (do
+        (println " XXXX=" start "=>" end " pe=" parent " , nodes=" nodes ) 
+        (doseq [[k v] nodes] (trace g k end max-distance (conj parent start)))
+        )
+      )
+    )
+  )
 
 ;;
 ; {{{
@@ -100,7 +105,7 @@
           
           (trace-with-max-hop g end end (dec max-hop) (conj parent start))
 
-          (doseq [[k v] (dissoc nodes end)] (trace-with-max-hop g k end (dec max-hop) (conj parent start )))
+          (doseq [[k v] (dissoc nodes end)] (trace-with-max-hop g k end (dec max-hop) (conj parent start)))
 
           (println "\n")
           
