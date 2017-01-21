@@ -51,33 +51,84 @@
 ;    :D {:C 8 :E 6} 
 ;    :E {:B 3}
 ;   }
-
+; A-C = ABC, ADC
 (defn has-edge-node? 
   [node e]
   (contains? node e))
-  ;; (and (contains? node e)
-  ;;      (> (count node) 1)))
 
+(defn trace
+  [g start end max-hop]
+  (println "> " start "-" end ",   max=" max-hop)
+
+  (let [nodes (start g)]
+
+    (if (> max-hop 0)
+
+      (do 
+
+        (list start end)
+        (for [[k v] nodes] (trace g k end (dec max-hop)))
+      
+    
+      ;; (if (has-edge-node? nodes end)
+      ;;   (list start end)
+      ;;
+       ;; (for [[k v] (start g)] 
+          ;; (-> (trace g k end (dec max-hop)) flatten (into [start])))
+      ;;   
+      ;;   )
+    ))
+   )
+  )
+
+; {{{
+(defn trace_2
+  [g start end max-hop]
+  
+  (println "> " start "-" end ",   max=" max-hop)
+
+  (let [nodes (start g)]
+    (if (has-edge-node? nodes end)
+      (list start end)
+      (for [[k v] nodes]  (-> (trace_2 g k end (dec max-hop)) flatten (into [start])))
+    )
+   )
+  )
+; }}}
+
+; {{{
 (defn traverse
   [g start end max-hop]
     (println start "->" end ", m=" max-hop)
+
     (if (has-edge-node? (start @g) end)
-      (hop @g start end)
-      ;; (for [[k v] (start @g)] (println k " ->" end))
-      (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
+      (do 
+        (let [current-hit (hop @g start end) 
+              next-hit (traverse g end end (dec max-hop))]
+            (println "X " start "| " current-hit " --" next-hit)
+            (concat current-hit next-hit)
+          )
+        )
+
+      (if (> max-hop 0)
+        (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
+        ()
+        )
       )
   )
+; }}}
 
-;{{{
-(defn route
-  "Traverse from root to goal"
-  [g start goal max-hop]
-  (if (has-edge-node? (start @g) goal)
-    (hop @g start goal)
-    ()
-  )
-  )
-;}}}
+;; (defn traverse
+;;   [g start end max-hop]
+;;     (println start "->" end ", m=" max-hop)
+;;     (if (has-edge-node? (start @g) end)
+;;       (hop @g start end)
+;;
+;;       (if (> max-hop 0)
+;;         (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
+;;         ())
+;;       )
+;;   )
 
 ;; ///////////////////////////////////////////////////////////////////////////////
 
