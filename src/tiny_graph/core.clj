@@ -18,7 +18,7 @@
 (defn distance-val
   "Returns the weight/distance between two nodes"
   [g node1 node2]
-  (println " 3 " node1 " - " node2)
+  ;; (println " 3 " node1 " - " node2)
   (let [n1 (keyword node1)
         n2 (keyword node2)
         distance-val (get-in @graph [n1 n2])]
@@ -58,9 +58,34 @@
 
 (def bucket (atom []))
 
-(defn trace
+;; (defn trace
+;;   [g start end max-distance parent]
+;;   (println " * __ " start "-" end ",   max=" max-distance ",p==" parent)
+;;
+;;   (let [nodes (start g)]
+;;
+;;       (if (has-edge-node? nodes end)
+;;         ; found
+;;         (do 
+;;           (if (> max-distance (apply distance graph (conj parent start end)))
+;;             (do 
+;;               (swap! bucket conj (conj parent start end))
+;;               (trace g end end max-distance (conj parent start)))
+;;             )
+;;           )
+;;
+;;         ; not found
+;;         (doseq [[k v] nodes] (trace g k end max-distance (conj parent start)))
+;;
+;;         )
+;;     )
+;;   )
+
+;;
+; {{{
+(defn trace-with-max-hop
   [g start end max-hop parent]
-  (println " __ " start "-" end ",   max=" max-hop ",p==" parent)
+  (println  " 1  __ start=" start "- end=" end ",   max=" max-hop ",p==" parent  "hop=" max-hop  "\n")
 
   (let [nodes (start g)]
 
@@ -70,73 +95,66 @@
 
         ; found
         (do 
-
-          (println "> " start "-" end ",   max=" max-hop ",p==" parent)
-          (println (conj parent start end) "\n")
-
+          
           (swap! bucket conj (conj parent start end))
+          
+          (trace-with-max-hop g end end (dec max-hop) (conj parent start))
 
-          ;; (for [[k v] (end g)] (trace g end end (dec max-hop) (conj parent start)))
-           (trace g end end (dec max-hop) (conj parent start))
+          (doseq [[k v] (dissoc nodes end)] (trace-with-max-hop g k end (dec max-hop) (conj parent start )))
 
-
-
+          (println "\n")
+          
           )
 
-
         ; not found
-          (for [[k v] nodes] (trace g k end (dec max-hop) (conj parent start)))
+        (do 
+          (println " XXXX=" start "=>" end " pe=" parent " , nodes=" nodes " hop="  max-hop) 
+          (doseq [[k v] nodes] (trace-with-max-hop g k end (dec max-hop) (conj parent start)))
+          (println "--XXX")
+        )
 
         )
 
-
-    
-      ;; (if (has-edge-node? nodes end)
-      ;;   (list start end)
-      ;;
-       ;; (for [[k v] (start g)] 
-          ;; (-> (trace g k end (dec max-hop)) flatten (into [start])))
-      ;;   
-      ;;   )
-    
+        (println "Done max hop" max-hop)
+      )
     )
-   )
   )
+; }}}
 
 ; {{{
 (defn trace_2
   [g start end max-hop]
-  
+
   (println "> " start "-" end ",   max=" max-hop)
 
   (let [nodes (start g)]
     (if (has-edge-node? nodes end)
       (list start end)
       (for [[k v] nodes]  (-> (trace_2 g k end (dec max-hop)) flatten (into [start])))
+      )
     )
-   )
   )
 ; }}}
 
 ; {{{
 (defn traverse
   [g start end max-hop]
-    (println start "->" end ", m=" max-hop)
+  (println start "->" end ", m=" max-hop)
 
-    (if (has-edge-node? (start @g) end)
-      (do 
-        (let [current-hit (hop @g start end) 
-              next-hit (traverse g end end (dec max-hop))]
-            (println "X " start "| " current-hit " --" next-hit)
-            (concat current-hit next-hit)
-          )
-        )
-
-      (if (> max-hop 0)
-        (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
-        ()
+  (if (has-edge-node? (start @g) end)
+    (do 
+      (let [current-hit (hop @g start end) 
+            next-hit (traverse g end end (dec max-hop))]
+        (println "X " start "| " current-hit " --" next-hit)
+        (concat current-hit next-hit)
         )
       )
+
+    (if (> max-hop 0)
+      (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
+      ()
+      )
+    )
   )
 ; }}}
 
@@ -165,8 +183,3 @@
 (add-edge graph "E" "B" 3)
 (add-edge graph "A" "E" 7)
 
-;; (route graph "A" "B" "C")
-;; (route graph "A" "D")
-;; (route graph "A" "D" "C")
-;; (route graph "A" "E" "B" "C" "D")
-;; (route graph "A" "E" "D")
