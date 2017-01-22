@@ -1,6 +1,5 @@
 (ns tiny-graph.core)
 
-(def graph (atom {}))
 
 (defn add-node
   "Add node or nodes to the graph"
@@ -18,10 +17,9 @@
 (defn distance-val
   "Returns the weight/distance between two nodes"
   [g node1 node2]
-  ;; (println " 3 " node1 " - " node2)
   (let [n1 (keyword node1)
         n2 (keyword node2)
-        distance-val (get-in @graph [n1 n2])]
+        distance-val (get-in g [n1 n2])]
     (if (nil? distance-val)
       (throw (Exception. "NO SUCH ROUTE"))
       distance-val)))
@@ -37,154 +35,135 @@
         (distance-val g r n))
       (catch Exception e "NO SUCH ROUTE"))))
 
-(defn hop
-  [edge start end]
-  (let [distance (get-in edge [start end])]
-    (if-not (nil? distance)
-      {start {end distance}}
-      nil)))
-
-;  {
-;    :A {:B 5 :D 5 :E 7} 
-;    :B {:C 4} 
-;    :C {:D 8 :E 2} 
-;    :D {:C 8 :E 6} 
-;    :E {:B 3}
-;   }
+(defn shortest-distance
+  [g trips]
+    (reduce 
+        (fn [n1 n2] (if (< (apply distance g n1) (apply distance g n2))
+            n1
+            n2)) trips ))
 
 (defn has-edge-node? 
   [node e]
   (contains? node e))
 
-(def bucket (atom []))
-
-(defn trace
-  [g start end max-distance parent]
-  (println " * __ " start "-" end ",   max=" max-distance ",p==" parent)
-
+(defn trace-with-distance
+  [g start end max-distance parent bucket]
   (let [nodes (start g)]
-
     (if (has-edge-node? nodes end)
-      ; found
-      (do 
-        (if (> max-distance (apply distance graph (conj parent start end)))
-          (do 
-            (swap! bucket conj (conj parent start end))
-            (trace g end end max-distance (conj parent start))
-            (println " -----------------" )
-            (doseq [[k v] (dissoc nodes end)] (trace g k end max-distance (conj parent start)))
-            )
-          )
-        )
-
-      ; not found
-      (do
-        (println " XXXX=" start "=>" end " pe=" parent " , nodes=" nodes ) 
-        (doseq [[k v] nodes] (trace g k end max-distance (conj parent start)))
-        )
-      )
-    )
-  )
+      (when (> max-distance (apply distance g (conj parent start end)))
+          (swap! bucket conj (conj parent start end))
+          (trace-with-distance g end end max-distance (conj parent start) bucket)
+          (doseq [[k v] (dissoc nodes end)] (trace-with-distance g k end max-distance (conj parent start) bucket)))
+      (doseq [[k v] nodes] (trace-with-distance g k end max-distance (conj parent start) bucket)))))
 
 ;;
 ; {{{
 (defn trace-with-max-hop
-  [g start end max-hop parent]
-  (println  " 1  __ start=" start "- end=" end ",   max=" max-hop ",p==" parent  "hop=" max-hop  "\n")
-
+  [g start end max-hop parent bucket]
   (let [nodes (start g)]
-
-    (if (> max-hop 0)
-
+    (if (pos? max-hop)
       (if (has-edge-node? nodes end)
-
-        ; found
         (do 
-          
           (swap! bucket conj (conj parent start end))
-          
-          (trace-with-max-hop g end end (dec max-hop) (conj parent start))
-
-          (doseq [[k v] (dissoc nodes end)] (trace-with-max-hop g k end (dec max-hop) (conj parent start)))
-
-          (println "\n")
-          
-          )
-
-        ; not found
-        (do 
-          (println " XXXX=" start "=>" end " pe=" parent " , nodes=" nodes " hop="  max-hop) 
-          (doseq [[k v] nodes] (trace-with-max-hop g k end (dec max-hop) (conj parent start)))
-          (println "--XXX")
-        )
-
-        )
-
-        (println "Done max hop" max-hop)
-      )
-    )
-  )
+          (trace-with-max-hop g end end (dec max-hop) (conj parent start) bucket)
+          (doseq [[k v] (dissoc nodes end)] (trace-with-max-hop g k end (dec max-hop) (conj parent start) bucket)))
+        (doseq [[k v] nodes] (trace-with-max-hop g k end (dec max-hop) (conj parent start) bucket))))))
 ; }}}
 
-; {{{
-(defn trace_2
-  [g start end max-hop]
+(defn trip-count
+  "Count the number of trips with specified max stop."
+  [g start end max-stop]
+  (let [bucket (atom [])]
+    (trace-with-max-hop g start end max-stop [] bucket)
+    (count @bucket)))
 
-  (println "> " start "-" end ",   max=" max-hop)
+(defn trip-count-with-exact-stop
+  "Count the number of trips between nodes with the exact specified number of stops"
+  [g start end stop-count]
+  (let [bucket (atom [])]
+    (trace-with-max-hop g start end stop-count [] bucket)
+    (count (filter (fn [a] (= (count a) (+ stop-count 1)) ) @bucket))))
 
-  (let [nodes (start g)]
-    (if (has-edge-node? nodes end)
-      (list start end)
-      (for [[k v] nodes]  (-> (trace_2 g k end (dec max-hop)) flatten (into [start])))
-      )
-    )
-  )
-; }}}
 
-; {{{
-(defn traverse
-  [g start end max-hop]
-  (println start "->" end ", m=" max-hop)
+(defn trip-distance
+  "Returns the shortest distance between between nodes"
+  [g start end]
+  (let [total-nodes (count g)
+        bucket (atom [])]
+    (trace-with-max-hop g start end total-nodes [] bucket)
+    ;; (println bucket)
+    (apply distance g (shortest-distance g @bucket))))
 
-  (if (has-edge-node? (start @g) end)
-    (do 
-      (let [current-hit (hop @g start end) 
-            next-hit (traverse g end end (dec max-hop))]
-        (println "X " start "| " current-hit " --" next-hit)
-        (concat current-hit next-hit)
-        )
-      )
+(defn trips-with-max-distance
+  "Find trips with specified max distance"
+  [g start end max-distance]
+  (let [bucket (atom [])]
+    (trace-with-distance g start end max-distance [] bucket)
+    (count @bucket)))
 
-    (if (> max-hop 0)
-      (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
-      ()
-      )
-    )
-  )
-; }}}
-
-;; (defn traverse
-;;   [g start end max-hop]
-;;     (println start "->" end ", m=" max-hop)
-;;     (if (has-edge-node? (start @g) end)
-;;       (hop @g start end)
+;; (def graph (atom {}))
+;; (add-node graph "A" "B" "C" "D" "E")
+;; (add-edge graph "A" "B" 5)
+;; (add-edge graph "B" "C" 4)
+;; (add-edge graph "C" "D" 8)
+;; (add-edge graph "D" "C" 8)
+;; (add-edge graph "D" "E" 6)
+;; (add-edge graph "A" "D" 5)
+;; (add-edge graph "C" "E" 2)
+;; (add-edge graph "E" "B" 3)
+;; (add-edge graph "A" "E" 7)
 ;;
-;;       (if (> max-hop 0)
-;;         (for [[k v] (start @g)] (traverse g k end (dec max-hop)))
-;;         ())
-;;       )
-;;   )
-
-;; ///////////////////////////////////////////////////////////////////////////////
-
-(add-node graph "A" "B" "C" "D" "E")
-(add-edge graph "A" "B" 5)
-(add-edge graph "B" "C" 4)
-(add-edge graph "C" "D" 8)
-(add-edge graph "D" "C" 8)
-(add-edge graph "D" "E" 6)
-(add-edge graph "A" "D" 5)
-(add-edge graph "C" "E" 2)
-(add-edge graph "E" "B" 3)
-(add-edge graph "A" "E" 7)
-
+;;
+;;
+;; (println "Output #1" (distance graph :A :B :C))
+;; (println "Output #2" (distance graph :A :D))
+;; (println "Output #3" (distance graph :A :D :C))
+;; (println "Output #4" (distance graph :A :E :B :C :D))
+;; (println "Output #5" (distance graph :A :E :D))
+;;
+;;
+;; (trace-with-max-hop @graph :C :C 3 [])
+;;
+;; (println "Output #6" (count @bucket))
+;;
+;; (reset! bucket [])
+;;
+;; (trace-with-max-hop @graph :A :C 4 [])
+;; (def result (filter (fn [a] (= (count a) 5) ) @bucket))
+;;
+;; (println "Output #7" (count result))
+;; (reset! bucket [])
+;;
+;; (trace-with-max-hop @graph :A :C 3 [])
+;;   
+;; (def result (reduce 
+;;         (fn [n1 n2]
+;;           (if (< (apply distance graph n1) (apply distance graph n2))
+;;             n1
+;;             n2
+;;           )
+;;         )
+;;         @bucket
+;;    ))
+;; (println "Output #8" (apply distance graph result))
+;;
+;; (reset! bucket [])
+;;
+;; (trace-with-max-hop @graph :B :B 5 [])
+;; (def result (reduce 
+;;         (fn [n1 n2]
+;;           (if (< (apply distance graph n1) (apply distance graph n2))
+;;             n1
+;;             n2
+;;           )
+;;         )
+;;         @bucket
+;;    ))
+;; (println "Output #9" (apply distance graph result))
+;;
+;;
+;; (reset! bucket [])
+;;
+;; (trace-with-distance @graph :C :C 30 [])
+;;
+;; (println "Output #10" (count @bucket))
