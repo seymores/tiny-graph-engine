@@ -14,15 +14,44 @@
 (add-edge graph "E" "B" 3)
 (add-edge graph "A" "E" 7)
 
+; What the graph looks like
+;
+; {
+;    :A {:B 5 :D 5 :E 7} 
+;    :B {:C 4} 
+;    :C {:D 8 :E 2} 
+;    :D {:C 8 :E 6} 
+;    :E {:B 3}
+;   }
+;
+
 (deftest test-graph-init
   (testing "Test adding of nodes and edges to graph"
     (is (= 5 (count @graph)))))
 
-(deftest test-graph-distance-count
+(deftest test-node-distance-val-calculation
+  (testing "Test node distance calculation"
+    (is (= 5 (distance-val @graph :A :B)))
+    (is (= 7 (distance-val @graph :A :E)))
+    (is (= 2 (distance-val @graph :C :E)))))
+
+(deftest test-graph-distance-calculation
   (testing "Test node distance count"
     (is (= 5 (distance @graph :A :B)))
+    
+    ; Answer question 1
     (is (= 9 (distance @graph :A :B :C)))
+    
+    ; Answer question 2
+    (is (= 5 (distance @graph :A :D)))
+    
+    ; Answer question 3
+    (is (= 13 (distance @graph :A :D :C)))
+    
+    ; Answer question 4
     (is (= 22 (distance @graph :A :E :B :C :D)))
+    
+    ; Answer question 5
     (is (= "NO SUCH ROUTE" (distance @graph :A :E :D)))))
 
 (deftest test-graph-trip-count
@@ -40,9 +69,9 @@
     (is (= 9 (trip-distance @graph :A :C)))
     
     ; Answers question 9
-    (is (= 9 (trip-distance @graph :B :B)))
-    ))
+    (is (= 9 (trip-distance @graph :B :B)))))
 
 (deftest test-graph-trip-routes
   (testing "Test routes operations with distance params"
+    ; Answers question 10
     (is (= 7 (trips-with-max-distance @graph :C :C 30)))))
