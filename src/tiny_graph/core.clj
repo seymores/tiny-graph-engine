@@ -1,5 +1,14 @@
 (ns tiny-graph.core)
 
+(defn addnode 
+  [g & nodes]
+  (let [graph (conj g {(first nodes) {}})
+        bal (rest nodes)]
+    (if-not (empty? bal)
+      (apply addnode graph bal)
+      graph)))
+
+
 (defn add-node
   "Add node or nodes to the graph"
   [g & nodes] 
@@ -35,7 +44,7 @@
         (distance-val g r n))
       (catch Exception e "NO SUCH ROUTE"))))
 
-(defn shortest-distance
+(defn- shortest-distance
   "Returns the shortest trip from list of trips"
   [g trips]
   (reduce 
@@ -43,7 +52,7 @@
                   n1
                   n2)) trips ))
 
-(defn has-edge-node? 
+(defn- has-edge-node? 
   [node e]
   (contains? node e))
 
