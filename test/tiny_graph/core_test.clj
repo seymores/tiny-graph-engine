@@ -17,10 +17,10 @@
 ; What the graph looks like
 ;
 ; {
-;    :A {:B 5 :D 5 :E 7} 
-;    :B {:C 4} 
-;    :C {:D 8 :E 2} 
-;    :D {:C 8 :E 6} 
+;    :A {:B 5 :D 5 :E 7}
+;    :B {:C 4}
+;    :C {:D 8 :E 2}
+;    :D {:C 8 :E 6}
 ;    :E {:B 3}
 ;   }
 ;
@@ -32,46 +32,25 @@
 (deftest test-node-distance-val-calculation
   (testing "Test node distance calculation"
     (is (= 5 (distance-val @graph :A :B)))
-    (is (= 7 (distance-val @graph :A :E)))
     (is (= 2 (distance-val @graph :C :E)))))
 
 (deftest test-graph-distance-calculation
   (testing "Test node distance count"
     (is (= 5 (distance @graph :A :B)))
-    
-    ; Answer question 1
-    (is (= 9 (distance @graph :A :B :C)))
-    
-    ; Answer question 2
-    (is (= 5 (distance @graph :A :D)))
-    
-    ; Answer question 3
     (is (= 13 (distance @graph :A :D :C)))
-    
-    ; Answer question 4
     (is (= 22 (distance @graph :A :E :B :C :D)))
-    
-    ; Answer question 5
     (is (= "NO SUCH ROUTE" (distance @graph :A :E :D)))))
 
 (deftest test-graph-trip-count
   (testing "Test trip counts between nodes with speficied max stop"
-
-    ; Answers question 6
     (is (= 2 (trip-count @graph :C :C 3)))
-
-    ; Answers question 7
     (is (= 3 (trip-count-with-exact-stop @graph :A :C 4)))))
 
 (deftest test-graph-trip-distance
   (testing "Test graph distance operations"
-    ; Answers question 8
     (is (= 9 (trip-distance @graph :A :C)))
-    
-    ; Answers question 9
     (is (= 9 (trip-distance @graph :B :B)))))
 
 (deftest test-graph-trip-routes
   (testing "Test routes operations with distance params"
-    ; Answers question 10
     (is (= 7 (trips-with-max-distance @graph :C :C 30)))))
