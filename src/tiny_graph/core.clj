@@ -1,26 +1,19 @@
 (ns tiny-graph.core)
 
-(defn addnode 
+(defn add-node
   [g & nodes]
   (let [graph (conj g {(first nodes) {}})
         bal (rest nodes)]
     (if-not (empty? bal)
-      (apply addnode graph bal)
+      (apply add-node graph bal)
       graph)))
 
-
-(defn add-node
-  "Add node or nodes to the graph"
-  [g & nodes] 
-  (doseq [n nodes]
-    (swap! g assoc (keyword n) {})))
-
 (defn add-edge
-  "Add edges to node"
+  "Add edge to node"
   [g node1 node2 weight]
   (let [n1 (keyword node1)
-        n2 (keyword node2)]    
-    (swap! g assoc-in [n1 n2] weight)))
+        n2 (keyword node2)]
+    (assoc-in g [n1 n2] weight)))
 
 (defn distance-val
   "Returns the weight/distance between two nodes"
@@ -38,7 +31,7 @@
   (let [r (first nodes)
         n (-> nodes rest first)
         b (rest nodes)]
-    (try 
+    (try
       (if (> (count b) 1)
         (+ (distance-val g r n) (apply distance g b))
         (distance-val g r n))
@@ -47,12 +40,12 @@
 (defn- shortest-distance
   "Returns the shortest trip from list of trips"
   [g trips]
-  (reduce 
-    (fn [n1 n2] (if (< (apply distance g n1) (apply distance g n2))
-                  n1
-                  n2)) trips ))
+  (reduce
+   (fn [n1 n2] (if (< (apply distance g n1) (apply distance g n2))
+                 n1
+                 n2)) trips))
 
-(defn- has-edge-node? 
+(defn- has-edge-node?
   [node e]
   (contains? node e))
 
@@ -72,7 +65,7 @@
   (let [nodes (start g)]
     (if (pos? max-hop)
       (if (has-edge-node? nodes end)
-        (do 
+        (do
           (swap! bucket conj (conj parent start end))
           (trace-with-max-hop g end end (dec max-hop) (conj parent start) bucket)
           (doseq [[k v] (dissoc nodes end)] (trace-with-max-hop g k end (dec max-hop) (conj parent start) bucket)))
@@ -91,8 +84,7 @@
   [g start end stop-count]
   (let [bucket (atom [])]
     (trace-with-max-hop g start end stop-count [] bucket)
-    (count (filter (fn [a] (= (count a) (inc stop-count)) ) @bucket))))
-
+    (count (filter (fn [a] (= (count a) (inc stop-count))) @bucket))))
 
 (defn trip-distance
   "Returns the shortest distance between between nodes"
@@ -109,5 +101,3 @@
   (let [bucket (atom [])]
     (trace-with-distance g start end max-distance [] bucket)
     (count @bucket)))
-
-
